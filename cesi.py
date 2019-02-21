@@ -9,8 +9,8 @@ class Spider:
         # 初始参数
         self.CheckCodeUrl = 'CheckCode.aspx'
         # self.PostUrl = 'default2.aspx'
-        self.Agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/40.0.2214.111 Chrome/40.0.2214.111 Safari/537.36'
         self.session = requests.session()
+        self.session.headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.131 Safari/537.36'
         self.uid = uid
         self.password = password
         self.name = name.encode('gb2312', 'replace')
@@ -25,11 +25,11 @@ class Spider:
     def login(self):
         # 访问教务系统
         res = 0
-        try:
-            res = self.session.get(self.url1)
-        except:
-            print('无法获取网址')
+        res = self.session.get(self.url1)
+        # except:
+        #     print('无法获取网址')
         html = etree.HTML(res.text)
+
         __VIEWSTATE = html.xpath('//*[@id="form1"]/input/@value')[0]
         # __VIEWSTATE = 'dDwxMTE4MjQwNDc1Ozs+i9laKsPigZHjeuJ/iNx4CF54wKA='
         data = {
@@ -43,20 +43,21 @@ class Spider:
             # 'hidPdrs':"",
             # 'hidsc':"",
         }
-        headers1 = {
-            "User-Agent": self.Agent
-        }
         # 登陆教务系统
         while True:
             try:
-                response = self.session.post(self.url1, data=data, headers=headers1)
+                response = self.session.post(self.url1, data=data)
                 # print(response.text)
                 if 'Object' in response.text:
                     print('登录成功')
                     break
+                else:
+                    time.sleep(2)
+                    print('登录失败')
             except:
+                time.sleep(2)
                 print('登录失败')
-                time.sleep(1)
+
 
     def getcheckcode(self):
         # 获取验证码并下载到本地
@@ -83,10 +84,6 @@ class Spider:
     def getList(self):
         # 获取全部课程内容
         self.session.headers['Referer'] = self.url2
-        headers2 = {
-            "User-Agent": self.Agent,
-            'Referer': self.url2
-        }
 
         while True:
             try:
@@ -95,7 +92,7 @@ class Spider:
                 break
             except:
                 print('viewstate获取失败')
-                time.sleep(1)
+                time.sleep(2)
 
         data2 = {
             '__EVENTTARGET': '',
@@ -112,22 +109,25 @@ class Spider:
         }
         while True:
             try:
-                kecheng = self.session.post(self.url2, data=data2, headers=headers2)
+                kecheng = self.session.post(self.url2, data=data2)
                 if kecheng.status_code == requests.codes.ok:
                     print('课程表获取成功')
                     break
+                else:
+                    print('重新获取课程表')
             except:
                 print('重新获取课程表')
                 time.sleep(1)
 
-        pat='<tr.+?</tr>'
-        pat_code='<input id=".+?" type="checkbox" name="(.+?)" />'
+        pat = '<tr.+?</tr>'
+        pat_code = '<input id=".+?" type="checkbox" name="(.+?)" />'
         pattern = re.compile(pat, re.S)
         codes = re.findall(pattern, kecheng.text)
-        # kcmc = re.findall('<a href="#" onclick=".+?">(.+?)</a>', pattern)
-        # print(kcmc[2])
+
         flag = 1
-        for c in codes :
+        for c in codes:
+            a = re.findall(pat_code, c)
+            print(a[1])
             if self.kc in c:
                 kccode = re.findall(pat_code, c)
                 self.code = kccode[0]
@@ -139,10 +139,6 @@ class Spider:
 
     def submit(self):
         self.session.headers['Referer'] = self.url2
-        headers2 = {
-            "User-Agent": self.Agent,
-            'Referer':self.url2
-            }
         while True:
             try:
                 res = self.session.get(self.url2)
@@ -169,8 +165,8 @@ class Spider:
             }
         while True:
             try:
-                tijiao = self.session.post(self.url2, data=data2, headers=headers2)
-                if tijiao.status_code == requests.codes.ok:
+                submitkc = self.session.post(self.url2, data=data2)
+                if submitkc.status_code == requests.codes.ok:
                     print('提交成功')
                     break
             except:
@@ -179,7 +175,7 @@ class Spider:
         #'判断选课是否成功'
         pat = '<legend>已选课程</legend><table.+?' + '公共选修课' + '.+?</table>'
         pattern = re.compile(pat, re.S)
-        lenth = len(re.findall(pattern, tijiao.text))
+        lenth = len(re.findall(pattern, submitkc.text))
         if (lenth == 1):
             exit('选课成功')
         else:
@@ -187,7 +183,8 @@ class Spider:
 
 
 if __name__ == '__main__':
-    spider = Spider('账号', '密码', '真实姓名', '课程名称')
+    spider = Spider('1512402602007', 'qq8852077', '陈嘉鑫', '课程名称')
+    # spider = Spider('账号', '密码', '真实姓名', '课程名称')
     spider.login()
     spider.getList()
-    spider.submit()
+    # spider.submit()
