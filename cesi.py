@@ -183,8 +183,7 @@ class Spider:
 
 
 if __name__ == '__main__':
-    spider = Spider('1512402602007', 'qq8852077', '陈嘉鑫', '课程名称')
-    # spider = Spider('账号', '密码', '真实姓名', '课程名称')
+    spider = Spider('账号', '密码', '真实姓名', '课程名称')
     spider.login()
     spider.getList()
-    # spider.submit()
+    spider.submit()
